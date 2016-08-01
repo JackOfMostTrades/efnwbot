@@ -1,0 +1,11 @@
+{
+    "require": {
+        "team-reflex/discord-php": "^3.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "4.8.*"
+    },
+    "autoload": {
+        "psr-4": {"EverfreeNorthwest\\Discord\\": "src/"}
+    }
+}
