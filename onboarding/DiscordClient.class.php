@@ -19,13 +19,15 @@
 
     public static function userClient($code) {
       $client = new DiscordClient(NULL);
-      $response = $client->doRequest('POST', TOKEN_ENDPOINT, 
-        array(
+      $response = $client->doRequest('POST',
+        'application/x-www-form-urlencoded',
+        TOKEN_ENDPOINT,
+        http_build_query(array(
           'client_id' => CLIENT_ID,
           'client_secret' => CLIENT_SECRET,
           'grant_type' => 'authorization_code',
           'code' => $_GET['code'],
-          'redirect_uri' => REDIRECT_URI));
+          'redirect_uri' => REDIRECT_URI)));
       if ($response == NULL) {
         return $NULL;
       }
@@ -45,7 +47,13 @@
       curl_close($this->curl);
     }
 
-    private function doRequest($method, $url, $body) {
+    private function logMsg($msg) {
+      $f = fopen('log/discord.log', 'a');
+      fwrite($f, date(DATE_ATOM) . " $msg\n");
+      fclose($f);
+    }
+
+    private function doRequest($method, $contentType, $url, $body) {
       curl_setopt($this->curl, CURLOPT_URL, $url);
 
       if ($method == 'POST') {
@@ -60,14 +68,8 @@
       if ($this->auth_header !== NULL) {
         array_push($headers, "Authorization: $this->auth_header");
       }
-      if ($method == 'POST') {
-        $body = http_build_query($body);
-      }
-      if ($method == 'PATCH') {
-        array_push($headers, 'Content-Type: application/json');
-        if ($body !== NULL) {
-          $body = json_encode($body);
-        }
+      if ($contentType !== NULL) {
+        array_push($headers, "Content-Type: $contentType");
       }
       curl_setopt($this->curl, CURLOPT_HTTPHEADER, $headers);
       if ($body !== NULL) {
@@ -77,19 +79,22 @@
       $response = curl_exec($this->curl);
       $response_code = curl_getinfo($this->curl, CURLINFO_HTTP_CODE);
       if ($response_code != 200) {
+        $this->logMsg("Error executing request to $url: $response\n");
         return NULL;
       }
       return json_decode($response);
     }
 
     public function doGet($url) {
-      return $this->doRequest('GET', $url, NULL);
+      return $this->doRequest('GET', NULL, $url, NULL);
     }
     public function doPost($url, $body) {
-      return $this->doRequest('POST', $url, $body);
+      return $this->doRequest('POST', 'application/json', $url,
+        json_encode($body));
     }
     public function doPatch($url, $body) {
-      return $this->doRequest('PATCH', $url, $body);
+      return $this->doRequest('PATCH', 'application/json', $url,
+        json_encode($body));
     }
   }
 

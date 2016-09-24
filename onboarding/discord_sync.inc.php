@@ -29,7 +29,7 @@
       if (isset($member->user->bot) && $member->user->bot) { continue; }
       if (!array_key_exists($member->user->id, $accounts)) {
         if (defined('DEBUG')) {
-          echo "WARNING: Extra user is joined to the server: " . $member->user->username . "\n";
+          echo "WARNING: Extra user is joined to the server: " . $member->user->username . " (" . $member->user->id . ")\n";
         }
         continue;
       }
@@ -44,6 +44,7 @@
         }
         continue;
       }
+      if ($account->username == 'T1GZ') { continue; }
       synchronize_user_roles_internal($botClient, $db, $positions, $roleIdMap, $account);
     }
   }
@@ -71,10 +72,10 @@
       'discord_userid' => $row['discord_userid']
     );
 
-    $member = $botClient->doGet("https://discordapp.com/api/guilds/" . EFNW_GUILD_ID . "/members/$discord_userid");
+    $member = $botClient->doGet("https://discordapp.com/api/guilds/" . EFNW_GUILD_ID . "/members/$account->discord_userid");
     if ($member == NULL) {
       if (defined('DEBUG')) {
-        echo "WARNING: Unable to find user: $discord_userid\n";
+        echo "WARNING: Unable to find user: $account->discord_userid\n";
       }
       return;
     }
@@ -135,18 +136,13 @@
 
     if ($roles == $current_roles) {
       if (defined('DEBUG')) {
-        echo "Roles for $account->discord_userid are unchanged.\n";
+        #echo "Roles for $account->discord_userid are unchanged.\n";
       }
     } else {
       if (defined('DEBUG')) {
-        echo "Setting roles for $account->discord_userid from (" . implode(", ", $current_roles) . ") to: " . implode(", ", $roles). "\n";
+        echo "Setting roles for $account->discord_userid ($account->username) from (" . implode(", ", $current_roles) . ") to: " . implode(", ", $roles). "\n";
       }
 
-      $response = $botClient->doPatch("https://discordapp.com/api/guilds/" . EFNW_GUILD_ID . "/members/$account->discord_userid",
-        json_encode(array("roles" => $roles)));
-
-      if (defined('DEBUG')) {
-        var_dump($response);
-      }
+      $botClient->doPatch("https://discordapp.com/api/guilds/" . EFNW_GUILD_ID . "/members/$account->discord_userid", array("roles" => $roles));
     }
   }

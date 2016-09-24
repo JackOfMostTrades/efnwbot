@@ -5,6 +5,12 @@
   require_once('DiscordClient.class.php');
   require_once('discord_sync.inc.php');
 
+  function logMsg($msg) {
+    $f = fopen('log/discord.log', 'a');
+    fwrite($f, date(DATE_ATOM) . " $msg\n");
+    fclose($f);
+  }
+
   $errorMsg = NULL;
   try {
     $db = new PDO('mysql:host='.SQL_HOST.';dbname='.SQL_DATABASE.';charset=utf8', SQL_USER_RW, SQL_PASSWD_RW);
@@ -33,6 +39,7 @@
     if ($response == NULL) {
       throw new Exception("Unable to fetch user data.");
     }
+    logMsg("Joining for " . $_SERVER['account_username'] . "; discord user id $response->id");
     if ($staffer->discord_userid != NULL && $staffer->discord_userid != $response->id) {
       throw new Exception("You have already been added to Discord with a different user.");
     }
@@ -45,7 +52,10 @@
     // Join the guild
     $botClient = DiscordClient::botClient();
     $userdata = $botClient->doGet("https://discordapp.com/api/guilds/" . EFNW_GUILD_ID . "/members/$staffer->discord_userid");
-    if (!isset($userdata->joined_at)) {
+    if (isset($userdata->joined_at) && $userdata->joined_at != NULL && $userdata->joined_at != "") {
+      logMsg("User $staffer->discord_userid already joined.");
+    } else {
+      logMsg("Joining user $staffer->discord_userid");
       $channels = $botClient->doGet("https://discordapp.com/api/guilds/" . EFNW_GUILD_ID . "/channels");
       foreach ($channels as $chan) {
         if ($chan->name == 'general') {
@@ -57,7 +67,12 @@
         throw new Exception("Could not find general channel.");
       }
       $invite = $botClient->doPost("https://discordapp.com/api/channels/$chan_id/invites", array( 'max_uses' => 1 ));
-      $userClient->doPost("https://discordapp.com/api/invites/" . $invite->code, array());
+      if ($invite == NULL) {
+        throw new Exception("Unable to get invitation code!");
+      }
+      logMsg("Joining user $staffer->discord_userid using invite code \"$invite->code\"");
+      $joinResponse = $userClient->doPost("https://discordapp.com/api/invites/" . $invite->code, array());
+      logMsg("User join response: " . json_encode($joinResponse));
     }
 
     synchronize_user_roles($db, $staffer->id);
@@ -71,7 +86,7 @@
 <div class="panel panel-default">
   <div class="panel-body">
     <?php
-      if ($errorMsg != NULL) { echo $errorMsg; }
+      if ($errorMsg != NULL) { echo "Error: $errorMsg<br>Please contact <a href=\"mailto:it@everfreenw.com\">it@everfreenw.com</a>."; }
       else { echo 'You have been added to the Everfree Northwest Discord server!'; }
     ?>
   </div>
