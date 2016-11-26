@@ -58,13 +58,13 @@
       logMsg("Joining user $staffer->discord_userid");
       $channels = $botClient->doGet("https://discordapp.com/api/guilds/" . EFNW_GUILD_ID . "/channels");
       foreach ($channels as $chan) {
-        if ($chan->name == 'general') {
+        if ($chan->name == 'off-topic') {
           $chan_id = $chan->id;
           break;
         }
       }
       if (!isset($chan_id)) {
-        throw new Exception("Could not find general channel.");
+        throw new Exception("Could not find off-topic channel.");
       }
       $invite = $botClient->doPost("https://discordapp.com/api/channels/$chan_id/invites", array( 'max_uses' => 1 ));
       if ($invite == NULL) {

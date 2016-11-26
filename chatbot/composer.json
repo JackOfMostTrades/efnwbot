@@ -1,6 +1,6 @@
 {
     "require": {
-        "team-reflex/discord-php": "^3.2"
+        "team-reflex/discord-php": "^4.0"
     },
     "require-dev": {
         "phpunit/phpunit": "4.8.*"

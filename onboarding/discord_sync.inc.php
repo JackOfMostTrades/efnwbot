@@ -1,6 +1,9 @@
 <?php
   require_once('DiscordClient.class.php');
 
+  # Roles that this script will not automatically add/remove
+  $UNSYNCHRONIZED_ROLES = array('Admin', 'Guest Announcements');
+
   function synchronize_all_user_roles($db) {
     $departments = getDepartments($db);
     $positions = getPositions($db, $departments);
@@ -44,7 +47,6 @@
         }
         continue;
       }
-      if ($account->username == 'T1GZ') { continue; }
       synchronize_user_roles_internal($botClient, $db, $positions, $roleIdMap, $account);
     }
   }
@@ -85,6 +87,8 @@
   }
 
   function synchronize_user_roles_internal($botClient, $db, $positions, $roleIdMap, $account) {
+    global $UNSYNCHRONIZED_ROLES;
+
     $staffer_positions = array();
     $stmt = $db->prepare('SELECT staff_position_id FROM staff_account_position_map WHERE staff_account_id=?');
     $stmt->execute(array($account->id));
@@ -124,15 +128,19 @@
         array_push($roles, $roleIdMap['Directors']);
       }
     }
-    if ($account->username == 'JackOfMostTrades') {
-      array_push($roles, $roleIdMap['Admin']);
-    }
 
     $roles = array_unique($roles);
     sort($roles);
 
     $current_roles = array_unique($account->roles);
     sort($current_roles);
+
+    # If the user is already in one of the unsynchronized roles, keep them in it
+    foreach ($UNSYNCHRONIZED_ROLES as $role) {
+      if (in_array($roleIdMap[$role], $current_roles)) {
+        array_push($roles, $roleIdMap[$role]);
+      }
+    }
 
     if ($roles == $current_roles) {
       if (defined('DEBUG')) {

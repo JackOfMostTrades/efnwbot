@@ -24,36 +24,35 @@ class BotMain {
   }
 
   private function runOnce($discord) {
-    $ws      = new WebSocket($discord);
-    $initTimer = $ws->loop->addTimer(15, function() use ($ws) {
+    $initTimer = $discord->loop->addTimer(15, function() use ($discord) {
       echo "Timing out initial connection.".PHP_EOL;
-      $ws->loop->stop();
+      $discord->loop->stop();
     });
 
-    $ws->on('ready', function($discord) use ($ws, $initTimer) {
+    $discord->on('ready', function($discord) use ($initTimer) {
       echo "Bot is ready!".PHP_EOL;
-      $ws->loop->cancelTimer($initTimer);
+      $discord->loop->cancelTimer($initTimer);
     });
-    $ws->on('close', function() use ($ws) {
+    $discord->on('close', function($discord) {
       echo "Bot disconnected.".PHP_EOL;
-      $ws->loop->stop();
+      $discord->loop->stop();
     });
-    $ws->on('reconnecting', function() {
+    $discord->on('reconnecting', function() {
       echo "Bot reconnecting.".PHP_EOL;
     });
-    $ws->on('reconnected', function() {
+    $discord->on('reconnected', function() {
       echo "Bot reconnected.".PHP_EOL;
     });
-    $ws->on('ws-reconnect-max', function() use ($ws) {
+    $discord->on('ws-reconnect-max', function($discord) {
       echo "Max reconnect attempts reached. Killing loop.".PHP_EOL;
-      $ws->loop->stop();
+      $discord->loop->stop();
     });
-    $ws->on('error', function($error) {
+    $discord->on('error', function($error) {
       echo "Error: $error".PHP_EOL;
     });
 
     // We will listen for messages
-    $ws->on('message', function ($message, $discord) {
+    $discord->on('message', function ($message, $discord) {
       try {
         if ($message->content[0] === "!") {
           $cmd = NULL;
@@ -74,11 +73,13 @@ class BotMain {
       }
     });
 
-    $ws->run();
+    $discord->run();
   }
 
   public function run() {
-    $discord = new Discord(BOT_TOKEN);
+    $discord = new Discord([
+      'token' => BOT_TOKEN
+    ]);
     while (true) {
       echo "Bot starting...".PHP_EOL;
       try {
