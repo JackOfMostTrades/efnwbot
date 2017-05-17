@@ -10,8 +10,8 @@
     }
     public function execute($message) {
       $now = time();
-      $start = strtotime('2017-05-12');
+      $start = strtotime('2018-05-18');
       $days = ceil(($start-$now)/(60*60*24));
-      $message->channel->sendMessage("There are $days days until Everfree Northwest 2017!");
+      $message->channel->sendMessage("There are $days days until Everfree Northwest 2018!");
     }
   }
